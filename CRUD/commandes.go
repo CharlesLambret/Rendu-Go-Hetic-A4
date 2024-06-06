@@ -55,13 +55,21 @@ func EffectuerCommande() {
     }
 
     var client models.Client
+
+	err = utils.GenererPDFCommande(commande, client, produit)
+    if err != nil {
+        fmt.Println("Erreur lors de la génération du PDF:", err)
+        return
+    }
+
     clientquery := "SELECT * FROM clients WHERE id = ?"
     err = utils.BD.Get(&client, clientquery, commande.ClientID)
     if err != nil {
         fmt.Println("Erreur lors de la récupération du client:", err)
         return
     }
-    utils.EnvoyerEmail(client.Email, "Confirmation de commande", fmt.Sprintf("Vous avez commandé %d x %s pour %.2f EUR le %x", commande.Quantite, produit.Titre, commande.Prix, commande.DateAchat))
+
+    utils.EnvoyerEmail(client.Email, "Confirmation de commande", fmt.Sprintf("Vous avez commandé %d x %s pour %.2f €", commande.Quantite, produit.Titre, commande.Prix))
 
     fmt.Println("Commande effectuée avec succès:", commande)
 }

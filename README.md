@@ -16,10 +16,12 @@ git clone https://github.com/CharlesLambret/Rendu-Go-Hetic-A4
 #### 1. Démarrer Docker 
 docker-compose up -d
 
-#### 2. Ajouter les utilisateurs
-users.sh
-
-#### 3. Installer les dépendances
+#### 2. Installer les dépendances
 go mod tidy
 
-#### 4. Importer la base de données via le fichier tp-go.sql
+#### 3. Importer la base de données via le fichier tp-go.sql
+
+#### 4. Lancer le script 
+
+go run main.go 
+
