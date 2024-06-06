@@ -2,7 +2,7 @@ package utils
 
 import (
     "github.com/jmoiron/sqlx"
-    _ "github.com/lib/pq"
+    _ "github.com/go-sql-driver/mysql"
     "log"
 )
 
@@ -10,7 +10,8 @@ var BD *sqlx.DB
 
 func InitBD() {
     var err error
-    BD, err = sqlx.Connect("postgres", "user=youruser dbname=yourdb sslmode=disable")
+    dsn := "root:@tcp(localhost)/tp-go?parseTime=true"
+    BD, err = sqlx.Connect("mysql", dsn)
     if err != nil {
         log.Fatalln(err)
     }

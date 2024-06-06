@@ -5,6 +5,7 @@ Ce projet permet de gérer des produits, des clients et des commandes par ligne 
 -   Docker
 -   Docker Compose
 -   Go 
+-   phpMyadmin
 
 ### Installation
 
@@ -21,3 +22,4 @@ users.sh
 #### 3. Installer les dépendances
 go mod tidy
 
+#### 4. Importer la base de données via le fichier tp-go.sql

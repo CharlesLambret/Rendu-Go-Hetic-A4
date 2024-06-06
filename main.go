@@ -3,7 +3,6 @@ package main
 import (
     "rendu-examen/CRUD"
     "rendu-examen/utils"
-	"log"
     "github.com/gin-gonic/gin"
 )
 
@@ -27,11 +26,4 @@ func main() {
     r.GET("/exporter/commandes", crud.ExporterCommandes)
 
     r.Run(":8080")
-
-	err := utils.EnvoyerEmail("testrendu2@example.com", "Test Email", "Test de l'envoi d'email")
-    if err != nil {
-        log.Fatal("Erreur lors de l'envoi de l'email:", err)
-    }
-    log.Println("Email envoyé avec succès")
-	
 }
