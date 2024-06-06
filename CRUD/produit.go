@@ -1,85 +1,121 @@
 package crud
 
 import (
+	"bufio"
 	"encoding/csv"
 	"fmt"
-	"net/http"
 	"os"
 	models "rendu-examen/modeles"
 	"rendu-examen/utils"
 	"strconv"
-
-	"github.com/gin-gonic/gin"
+	"strings"
 )
 
-func AjouterProduit(c *gin.Context) {
+func AjouterProduit() {
+	reader := bufio.NewReader(os.Stdin)
 	var produit models.Produit
-	if err := c.ShouldBindJSON(&produit); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
 
-	query := `INSERT INTO produits (titre, description, prix, quantite) VALUES ($1, $2, $3, $4) RETURNING id`
-	err := utils.BD.QueryRow(query, produit.Titre, produit.Description, produit.Prix, produit.Quantite).Scan(&produit.ID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	fmt.Print("Titre: ")
+	produit.Titre, _ = reader.ReadString('\n')
+	produit.Titre = strings.TrimSpace(produit.Titre)
 
-	c.JSON(http.StatusOK, produit)
+	fmt.Print("Description: ")
+	produit.Description, _ = reader.ReadString('\n')
+	produit.Description = strings.TrimSpace(produit.Description)
+
+	fmt.Print("Prix: ")
+	fmt.Scanln(&produit.Prix)
+
+	fmt.Print("Quantité: ")
+	fmt.Scanln(&produit.Quantite)
+
+	query := `INSERT INTO produits (titre, description, prix, quantite, actif) VALUES (?, ?, ?, ?, TRUE)`
+    res, err := utils.BD.Exec(query, produit.Titre, produit.Description, produit.Prix, produit.Quantite)
+    if err != nil {
+        fmt.Println("Erreur lors de l'ajout du produit:", err)
+        return
+    }
+
+    id, err := res.LastInsertId()
+    if err != nil {
+        fmt.Println("Erreur lors de la récupération de l'ID du produit:", err)
+        return
+    }
+    produit.ID = int(id)
+
+    fmt.Println("Produit ajouté avec succès:", produit)
 }
 
-func AfficherProduits(c *gin.Context) {
+func AfficherProduits() {
 	var produits []models.Produit
 	err := utils.BD.Select(&produits, "SELECT * FROM produits WHERE actif = TRUE")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		fmt.Println("Erreur lors de la récupération des produits:", err)
 		return
 	}
 
-	c.JSON(http.StatusOK, produits)
+	for _, produit := range produits {
+		fmt.Printf("ID: %d, Titre: %s, Description: %s, Prix: %.2f, Quantité: %d\n", produit.ID, produit.Titre, produit.Description, produit.Prix, produit.Quantite)
+	}
 }
 
-func ModifierProduit(c *gin.Context) {
+func ModifierProduit() {
 	var produit models.Produit
-	if err := c.ShouldBindJSON(&produit); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+	reader := bufio.NewReader(os.Stdin)
 
-	query := `UPDATE produits SET titre = $1, description = $2, prix = $3, quantite = $4 WHERE id = $5`
+	fmt.Print("ID du produit à modifier: ")
+	fmt.Scanln(&produit.ID)
+
+	fmt.Print("Nouveau Titre: ")
+	produit.Titre, _ = reader.ReadString('\n')
+	produit.Titre = strings.TrimSpace(produit.Titre)
+
+	fmt.Print("Nouvelle Description: ")
+	produit.Description, _ = reader.ReadString('\n')
+	produit.Description = strings.TrimSpace(produit.Description)
+
+	fmt.Print("Nouveau Prix: ")
+	fmt.Scanln(&produit.Prix)
+
+	fmt.Print("Nouvelle Quantité: ")
+	fmt.Scanln(&produit.Quantite)
+
+    query := `UPDATE produits SET titre = ?, description = ?, prix = ?, quantite = ? WHERE id = ?`
 	_, err := utils.BD.Exec(query, produit.Titre, produit.Description, produit.Prix, produit.Quantite, produit.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		fmt.Println("Erreur lors de la modification du produit:", err)
 		return
 	}
 
-	c.JSON(http.StatusOK, produit)
+	fmt.Println("Produit modifié avec succès:", produit)
 }
 
-func SupprimerProduit(c *gin.Context) {
-	id := c.Param("id")
-	query := `UPDATE produits SET actif = FALSE WHERE id = $1`
+func DesactiverProduit() {
+	var id int
+	fmt.Print("ID du produit à désactiver: ")
+	fmt.Scanln(&id)
+
+    query := `UPDATE produits SET actif = FALSE WHERE id = ?`
 	_, err := utils.BD.Exec(query, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		fmt.Println("Erreur lors de la désactivation du produit:", err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Produit désactivé"})
+	fmt.Println("Produit désactivé avec succès")
 }
 
-func ExporterProduits(c *gin.Context) {
+func ExporterProduits() {
 	var produits []models.Produit
 	err := utils.BD.Select(&produits, "SELECT * FROM produits")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		fmt.Println("Erreur lors de la récupération des produits:", err)
 		return
 	}
 
 	file, err := os.Create("exports/produits.csv")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		fmt.Println("Erreur lors de la création du fichier CSV:", err)
 		return
 	}
 	defer file.Close()
@@ -100,5 +136,5 @@ func ExporterProduits(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Produits exportés avec succès"})
+	fmt.Println("Produits exportés avec succès")
 }

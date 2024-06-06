@@ -1,72 +1,119 @@
 package crud
 
 import (
+	"bufio"
 	"encoding/csv"
-	"net/http"
+	"fmt"
 	"os"
-	"rendu-examen/modeles"
+	models "rendu-examen/modeles"
 	"rendu-examen/utils"
 	"strconv"
-
-	"github.com/gin-gonic/gin"
+	"strings"
 )
 
-func AjouterClient(c *gin.Context) {
+func AjouterClient() {
+	reader := bufio.NewReader(os.Stdin)
 	var client models.Client
-	if err := c.ShouldBindJSON(&client); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
 
-	query := `INSERT INTO clients (nom, prenom, telephone, adresse, email) VALUES ($1, $2, $3, $4, $5) RETURNING id`
-	err := utils.BD.QueryRow(query, client.Nom, client.Prenom, client.Telephone, client.Adresse, client.Email).Scan(&client.ID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	fmt.Print("Nom: ")
+	client.Nom, _ = reader.ReadString('\n')
+	client.Nom = strings.TrimSpace(client.Nom)
 
-	c.JSON(http.StatusOK, client)
+	fmt.Print("Prenom: ")
+	client.Prenom, _ = reader.ReadString('\n')
+	client.Prenom = strings.TrimSpace(client.Prenom)
+
+	fmt.Print("Telephone: ")
+	client.Telephone, _ = reader.ReadString('\n')
+	client.Telephone = strings.TrimSpace(client.Telephone)
+
+	fmt.Print("Adresse: ")
+	client.Adresse, _ = reader.ReadString('\n')
+	client.Adresse = strings.TrimSpace(client.Adresse)
+
+	fmt.Print("Email: ")
+	client.Email, _ = reader.ReadString('\n')
+	client.Email = strings.TrimSpace(client.Email)
+
+	query := `INSERT INTO clients (nom, prenom, telephone, adresse, email) VALUES (?, ?, ?, ?, ?)`
+    res, err := utils.BD.Exec(query, client.Nom, client.Prenom, client.Telephone, client.Adresse, client.Email)
+    if err != nil {
+        fmt.Println("Erreur lors de l'ajout du client:", err)
+        return
+    }
+
+    id, err := res.LastInsertId()
+    if err != nil {
+        fmt.Println("Erreur lors de la récupération de l'ID du client:", err)
+        return
+    }
+    client.ID = int(id)
+
+    fmt.Println("Client ajouté avec succès:", client)
 }
 
-func AfficherClients(c *gin.Context) {
+func AfficherClients() {
 	var clients []models.Client
 	err := utils.BD.Select(&clients, "SELECT * FROM clients")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		fmt.Println("Erreur lors de la récupération des clients:", err)
 		return
 	}
 
-	c.JSON(http.StatusOK, clients)
+	for _, client := range clients {
+		fmt.Printf("ID: %d, Nom: %s, Prenom: %s, Telephone: %s, Adresse: %s, Email: %s\n", client.ID, client.Nom, client.Prenom, client.Telephone, client.Adresse, client.Email)
+	}
 }
 
-func ModifierClient(c *gin.Context) {
+func ModifierClient() {
 	var client models.Client
-	if err := c.ShouldBindJSON(&client); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+	reader := bufio.NewReader(os.Stdin)
 
-	query := `UPDATE clients SET nom = $1, prenom = $2, telephone = $3, adresse = $4, email = $5 WHERE id = $6`
-	_, err := utils.BD.Exec(query, client.Nom, client.Prenom, client.Telephone, client.Adresse, client.Email, client.ID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	fmt.Print("ID du client à modifier: ")
+	fmt.Scanln(&client.ID)
 
-	c.JSON(http.StatusOK, client)
+	fmt.Print("Nouveau Nom: ")
+	client.Nom, _ = reader.ReadString('\n')
+	client.Nom = strings.TrimSpace(client.Nom)
+
+	fmt.Print("Nouveau Prenom: ")
+	client.Prenom, _ = reader.ReadString('\n')
+	client.Prenom = strings.TrimSpace(client.Prenom)
+
+	fmt.Print("Nouveau Telephone: ")
+	client.Telephone, _ = reader.ReadString('\n')
+	client.Telephone = strings.TrimSpace(client.Telephone)
+
+	fmt.Print("Nouvelle Adresse: ")
+	client.Adresse, _ = reader.ReadString('\n')
+	client.Adresse = strings.TrimSpace(client.Adresse)
+
+	fmt.Print("Nouvel Email: ")
+	client.Email, _ = reader.ReadString('\n')
+	client.Email = strings.TrimSpace(client.Email)
+
+	query := `UPDATE clients SET nom = ?, prenom = ?, telephone = ?, adresse = ?, email = ? WHERE id = ?`
+    _, err := utils.BD.Exec(query, client.Nom, client.Prenom, client.Telephone, client.Adresse, client.Email, client.ID)
+    if err != nil {
+        fmt.Println("Erreur lors de la modification du client:", err)
+        return
+    }
+
+    fmt.Println("Client modifié avec succès:", client)
+
 }
 
-func ExporterClients(c *gin.Context) {
+func ExporterClients() {
 	var clients []models.Client
 	err := utils.BD.Select(&clients, "SELECT * FROM clients")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		fmt.Println("Erreur lors de la récupération des clients:", err)
 		return
 	}
 
 	file, err := os.Create("exports/clients.csv")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		fmt.Println("Erreur lors de la création du fichier CSV:", err)
 		return
 	}
 	defer file.Close()
@@ -87,5 +134,5 @@ func ExporterClients(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Clients exportés avec succès"})
+	fmt.Println("Clients exportés avec succès")
 }

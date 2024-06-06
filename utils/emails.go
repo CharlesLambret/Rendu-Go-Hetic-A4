@@ -12,7 +12,7 @@ func EnvoyerEmail(destinataire, sujet, corps string) error {
     m.SetHeader("Subject", sujet)
     m.SetBody("text/plain", corps)
 
-    d := mail.NewDialer("localhost", 1825, "", "")
+    d := mail.NewDialer("localhost", 1025, "", "")
 
     if err := d.DialAndSend(m); err != nil {
         log.Println("Erreur lors de l'envoi de l'email:", err)
